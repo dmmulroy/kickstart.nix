@@ -1,4 +1,4 @@
-{ username }: { pkgs, ...}:
+{ username }: { pkgs, lib, config, ...}:
 {
   # add more system settings here
   nix = {
@@ -17,13 +17,12 @@
 
   services.nix-daemon.enable = true;
 
-  environment.loginShell = "${pkgs.fish}/bin/fish";
+  environment.shells = [ pkgs.zsh pkgs.fish ];
+
+  programs.fish.enable = true;
 
   users.users.${username} = {
     home = "/Users/${username}";
     shell = pkgs.fish;
   };
- 
-  # programs.zsh.enable = true;
-  programs.fish.enable = true;
 }

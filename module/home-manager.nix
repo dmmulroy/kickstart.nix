@@ -4,24 +4,21 @@
   # https://mipmip.github.io/home-manager-option-search/
 
   # add home-manager user settings here
-  home.packages = with pkgs; [ git ripgrep neovim ];
+  home.packages = with pkgs; [ git neovim ripgrep zsh ];
   home.stateVersion = "23.11";
 
   programs.direnv = { 
       enable = true;
-      # enableFishIntegration = true;
-      # enableZshIntegration = true;
+      enableFishIntegration = true;
+      enableZshIntegration = true;
       nix-direnv.enable = true; 
     };
 
-  /* programs.fish = {
-    enable = true;
-  }; */
 
   programs.fzf = { 
       enable = true;
-      # enableFishIntegration = true;
-      # enableZshIntegration = true;
+      enableFishIntegration = true;
+      enableZshIntegration = true;
       colors = {
         bg = "#24273a";     
         "bg+" = "#363a4f";  
