@@ -1,10 +1,8 @@
 { pkgs, ... }:
-
 {
   # https://mipmip.github.io/home-manager-option-search/
 
-  # add home-manager user settings here
-  home.packages = with pkgs; [ git ripgrep fd ];
+  home.packages = with pkgs; [ git ripgrep fd tree ];
   home.stateVersion = "23.11";
 
   programs.direnv = { 
@@ -40,6 +38,8 @@
     defaultEditor = true;
     enable = true;
     withNodeJs = true; 
+    withPython3 = true;
+    withRuby = true;
   };
 
   programs.starship = {
