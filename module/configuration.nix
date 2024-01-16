@@ -1,6 +1,5 @@
 { username }: { pkgs, lib, config, ...}:
 {
-  # add more system settings here
   nix = {
     settings = {
       auto-optimise-store = true;
@@ -14,15 +13,7 @@
       warn-dirty = false;
     };
   };
-
+  programs.zsh.enable = true;
   services.nix-daemon.enable = true;
-
-  environment.shells = [ pkgs.zsh pkgs.fish ];
-
-  programs.fish.enable = true;
-
-  users.users.${username} = {
-    home = "/Users/${username}";
-    shell = pkgs.fish;
-  };
+  users.users.${username}.home = "/Users/${username}";
 }
