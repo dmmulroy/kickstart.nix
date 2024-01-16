@@ -1,4 +1,4 @@
-{ username }: { pkgs, lib, config, ...}:
+{ username }:
 {
   nix = {
     settings = {
