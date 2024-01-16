@@ -98,6 +98,7 @@
       "c" = "clear";
       "code" = "vim";
       "ks" = "tmux kill-server";
+      "node-env" = "nix-shell -p nodejs_21 bun typescript eslint_d prettier_d --command zsh";
     };
     syntaxHighlighting = {
       enable = true;
