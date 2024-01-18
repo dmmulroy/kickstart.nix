@@ -2,18 +2,35 @@
 {
   # https://mipmip.github.io/home-manager-option-search/
 
-  home.packages = with pkgs; [ git ripgrep fd tree ];
+  home.packages = with pkgs; [ git ripgrep fd tree wget prettierd ];
   home.stateVersion = "23.11";
 
   programs.direnv = { 
       enable = true;
       enableZshIntegration = true;
+      # This gets enabled by default when enabling programs.fish
+      # enableFishIntegration = true;
       nix-direnv.enable = true; 
     };
+
+  programs.fish = {
+    enable = true;
+    interactiveShellInit = ''
+      set fish_greeting # Disable greeting
+      
+      ${builtins.readFile ../config/fish/catppuccin_macchiato_theme.fish}
+    '';
+    functions = import ../config/fish/functions.nix;
+    plugins = [
+      { name = "z"; src = pkgs.fishPlugins.z.src; }
+    ];
+    shellAliases = import ../config/fish/aliases.nix;
+  };
 
   programs.fzf = { 
       enable = true;
       enableZshIntegration = true;
+      enableFishIntegration = true;
       colors = {
         bg = "#24273a";     
         "bg+" = "#363a4f";  
@@ -45,6 +62,7 @@
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
+    enableFishIntegration = true;
     settings = {
       buf = {
         disabled = true;
@@ -97,8 +115,10 @@
     shellAliases = {
       "c" = "clear";
       "code" = "vim";
+      "dwc" = ''darwin-rebuild check --flake ".#aarch64"'';
+      "dwb" = ''darwin-rebuild switch --flake ".#aarch64"'';
       "ks" = "tmux kill-server";
-      "node-env" = "nix-shell -p nodejs_21 bun typescript eslint_d prettier_d --command zsh";
+      "node-env" = "nix-shell -p nodejs_21 bun typescript eslint_d prettierd --command zsh";
     };
     syntaxHighlighting = {
       enable = true;
