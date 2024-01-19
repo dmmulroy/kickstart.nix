@@ -2,7 +2,17 @@
 {
   # https://mipmip.github.io/home-manager-option-search/
 
-  home.packages = with pkgs; [ git ripgrep fd tree wget prettierd ];
+  home.packages = with pkgs; [ 
+    bun
+    fd
+    git
+    prettierd
+    rectangle
+    ripgrep
+    tree
+    wget
+  ];
+
   home.stateVersion = "23.11";
 
   programs.direnv = { 
@@ -17,12 +27,22 @@
     enable = true;
     interactiveShellInit = ''
       set fish_greeting # Disable greeting
+
+      eval "$(/opt/homebrew/bin/brew shellenv)"
       
       ${builtins.readFile ../config/fish/catppuccin_macchiato_theme.fish}
     '';
     functions = import ../config/fish/functions.nix;
     plugins = [
-      { name = "z"; src = pkgs.fishPlugins.z.src; }
+      { 
+        name = "z";
+        src = pkgs.fishPlugins.z.src;
+      }
+
+      {
+        name = "plugin-git";
+        src = pkgs.fishPlugins.plugin-git.src;
+      }
     ];
     shellAliases = import ../config/fish/aliases.nix;
   };
