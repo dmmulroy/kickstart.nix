@@ -1,4 +1,13 @@
 { pkgs, ... }:
+
+
+let 
+    userVimPlugin = pkgs.vimUtils.buildVimPlugin  {
+      name = "user";
+      src = ../config/nvim;
+    };
+in
+
 {
   # https://mipmip.github.io/home-manager-option-search/
 
@@ -72,8 +81,14 @@
     };
 
   programs.neovim = {
-    defaultEditor = true;
     enable = true;
+    plugins = [
+      userVimPlugin
+    ];
+    extraLuaConfig = ''
+      require('user')
+    '';
+    defaultEditor = true;
     withNodeJs = true; 
     withPython3 = true;
     withRuby = true;
