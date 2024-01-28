@@ -73,6 +73,7 @@ nnoremap("<leader>z", "<cmd>wq<cr>", { silent = false })
 nnoremap("<leader>e", function()
 	require("oil").toggle_float()
 end)
+
 -- Center buffer while navigating
 nnoremap("<C-u>", "<C-u>zz")
 nnoremap("<C-d>", "<C-d>zz")
@@ -101,12 +102,8 @@ nnoremap("<leader>S", function()
 end)
 
 -- Open Spectre for global find/replace for the word under the cursor in normal mode
+-- TODO Fix, currently being overriden by Telescope
 nnoremap("<leader>sw", function()
-	require("spectre").open_visual({ select_word = true })
-end, { desc = "Search current word" })
-
--- Open Spectre for global find/replace for the word under the cursor in visual mode
-vnoremap("<leader>sw", function()
 	require("spectre").open_visual({ select_word = true })
 end, { desc = "Search current word" })
 
@@ -114,7 +111,7 @@ end, { desc = "Search current word" })
 nnoremap("L", "$")
 nnoremap("H", "^")
 
--- Press 'U' for undo
+-- Press 'U' for redo
 nnoremap("U", "<C-r>")
 
 -- Turn off highlighted results
@@ -156,12 +153,6 @@ end)
 nnoremap("[w", function()
 	vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.WARN })
 	vim.api.nvim_feedkeys("zz", "n", false)
-end)
-
-nnoremap("<leader>d", function()
-	vim.diagnostic.open_float({
-		border = "rounded",
-	})
 end)
 
 -- Place all dignostics into a qflist
@@ -268,10 +259,7 @@ nnoremap("<leader>sf", function()
 	require("telescope.builtin").find_files({ hidden = true })
 end, { desc = "[S]earch [F]iles" })
 nnoremap("<leader>sh", require("telescope.builtin").help_tags, { desc = "[S]earch [H]elp" })
-nnoremap("<leader>sw", require("telescope.builtin").grep_string, { desc = "[S]earch current [W]ord" })
 nnoremap("<leader>sg", require("telescope.builtin").live_grep, { desc = "[S]earch by [G]rep" })
-nnoremap("<leader>sd", require("telescope.builtin").diagnostics, { desc = "[S]earch [D]iagnostics" })
-nnoremap("<leader>sd", require("telescope.builtin").git_files, { desc = "[S]earch [D]iagnostics" })
 
 nnoremap("<leader>sc", function()
 	require("telescope.builtin").commands(require("telescope.themes").get_dropdown({
