@@ -5,7 +5,6 @@ local tnoremap = require("user.keymap_utils").tnoremap
 local xnoremap = require("user.keymap_utils").xnoremap
 local harpoon_ui = require("harpoon.ui")
 local harpoon_mark = require("harpoon.mark")
-local illuminate = require("illuminate")
 local utils = require("user.utils")
 
 local M = {}
@@ -323,17 +322,6 @@ end
 
 -- Symbol Outline keybind
 nnoremap("<leader>so", ":SymbolsOutline<cr>")
-
--- Vim Illuminate keybinds
-nnoremap("<leader>]", function()
-	illuminate.goto_next_reference()
-	vim.api.nvim_feedkeys("zz", "n", false)
-end, { desc = "Illuminate: Goto next reference" })
-
-nnoremap("<leader>[", function()
-	illuminate.goto_prev_reference()
-	vim.api.nvim_feedkeys("zz", "n", false)
-end, { desc = "Illuminate: Goto previous reference" })
 
 -- Open Copilot panel
 nnoremap("<leader>oc", function()

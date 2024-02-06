@@ -1,11 +1,11 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
-let 
+/* let 
   userVimPlugin = pkgs.vimUtils.buildVimPlugin  {
     name = "user";
-    src = ../config/nvim;
+    src = ../config/nvim/.;
   };
-in
+in */
 
 {
   # https://mipmip.github.io/home-manager-option-search/
@@ -79,18 +79,19 @@ in
       ];
     };
 
+  xdg.configFile = {
+    nvim = { 
+      source = config.lib.file.mkOutOfStoreSymlink ../config/nvim; 
+    }; 
+  };
+
   programs.neovim = {
     enable = true;
-    plugins = [
-      userVimPlugin
-    ];
-    extraLuaConfig = ''
-      require('user')
-    '';
     defaultEditor = true;
     withNodeJs = true; 
     withPython3 = true;
     withRuby = true;
+    vimdiffAlias = true;
   };
 
   programs.starship = {
