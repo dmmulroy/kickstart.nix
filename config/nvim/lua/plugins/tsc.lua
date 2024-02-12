@@ -1,7 +1,7 @@
 return {
 	{
 		"dmmulroy/tsc.nvim",
-		lazy = false,
+		lazy = true,
 		ft = { "typescript", "typescriptreact" },
 		config = function()
 			require("tsc").setup({

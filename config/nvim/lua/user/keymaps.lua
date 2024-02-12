@@ -154,6 +154,12 @@ nnoremap("[w", function()
 	vim.api.nvim_feedkeys("zz", "n", false)
 end)
 
+nnoremap("<leader>d", function()
+	vim.diagnostic.open_float({
+		border = "rounded",
+	})
+end)
+
 -- Place all dignostics into a qflist
 nnoremap("<leader>ld", vim.diagnostic.setqflist, { desc = "Quickfix [L]ist [D]iagnostics" })
 
