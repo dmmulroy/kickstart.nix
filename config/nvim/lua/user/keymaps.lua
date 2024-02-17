@@ -126,7 +126,7 @@ end)
 
 -- Goto previous diagnostic of any severity
 nnoremap("[d", function()
-	vim.diagnostic.goto_prev({})
+	vim.diagnostic.goto_pev({})
 	vim.api.nvim_feedkeys("zz", "n", false)
 end)
 
@@ -152,12 +152,6 @@ end)
 nnoremap("[w", function()
 	vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.WARN })
 	vim.api.nvim_feedkeys("zz", "n", false)
-end)
-
-nnoremap("<leader>d", function()
-	vim.diagnostic.open_float({
-		border = "rounded",
-	})
 end)
 
 -- Place all dignostics into a qflist
@@ -351,14 +345,14 @@ vnoremap("L", "$<left>")
 vnoremap("H", "^")
 
 -- Paste without losing the contents of the register
-xnoremap("<leader>p", '"_dP')
-
--- Move selected text up/down in visual mode
 vnoremap("<A-j>", ":m '>+1<CR>gv=gv")
 vnoremap("<A-k>", ":m '<-2<CR>gv=gv")
 
 -- Reselect the last visual selection
 xnoremap("<<", function()
+	xnoremap("<leader>p", '"_dP')
+
+	-- Move selected text up/down in visual mode
 	vim.cmd("normal! <<")
 	vim.cmd("normal! gv")
 end)

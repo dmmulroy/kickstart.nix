@@ -5,5 +5,7 @@
   dwb = ''darwin-rebuild switch --flake ".#aarch64"'';
   grep = "grep --color=auto --exclude-dir={.bzr,CVS,.git,.hg,.svn,.idea,.tox}";
   ks = "tmux kill-server";
-  node-env = "nix-shell -p nodejs_21 bun typescript eslint_d prettierd --command fish";
+  node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd}";
+  kill-opam = "mv ~/.opam ~/_opam";
+  revive-opam = "mv ~/_opam ~/.opam";
 } 

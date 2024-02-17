@@ -1,6 +1,5 @@
 { pkgs, config, ... }:
 
-
 {
   # https://mipmip.github.io/home-manager-option-search/
 
@@ -72,6 +71,13 @@
        "--preview 'cat {}'"
       ];
     };
+
+  xdg.configFile = {
+    ghostty = { 
+      source = config.lib.file.mkOutOfStoreSymlink ../config/ghostty; 
+      recursive = true;
+    }; 
+  };
 
   xdg.configFile = {
     nvim = { 

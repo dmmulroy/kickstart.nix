@@ -1,0 +1,78 @@
+# Background & Foreground Colors
+background = #24273A
+foreground = #CAD3F5
+
+# Selection Colors
+selection-background = #24273A
+selection-foreground = #F4DBD6
+
+# Cursor Colors
+cursor-color = #F4DBD6
+cursor-text = #24273A 
+
+# Black
+palette = 0=#494D64
+palette = 8=#5B6078
+
+# Red
+palette = 1=#ED8796
+palette = 9=#ED8796
+
+# Green
+palette = 2=#A6DA95
+palette = 10=#A6DA95
+
+# Yellow
+palette = 3=#EED49F
+palette = 11=#EED49F
+
+# Blue
+palette = 4=#8AADF4
+palette = 12=#8AADF4
+
+# Magenta
+palette = 5=#F5BDE6
+palette = 13=#F5BDE6
+
+# Cyan
+palette = 6=#8BD5CA
+palette = 14=#8BD5CA
+
+# White
+palette = 7=#B8C0E0
+palette = 15=#A5ADCB
+
+# Font family
+font-family = MonoLisa
+font-style = Regular
+font-style-italic = Semibold Italic
+font-style-bold = Bold
+font-style-bold-italic = Bold Italic
+
+# Font size
+font-size = 22
+
+# Opacity of split windows
+unfocused-split-opacity = 0.97  
+
+# Cursor style
+cursor-style-blink = true
+
+# Clipboard settings
+clipboard-read = allow
+clipboard-write = allow
+
+# Allow option to work as alt on macos
+macos-option-as-alt = true
+
+# Always show ghostty as the title
+title = ghostty 
+
+# Window size
+window-width = 90
+window-height = 30
+
+window-padding-balance = true
+window-padding-x = 0
+window-padding-y = 0
+
