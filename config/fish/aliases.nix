@@ -8,4 +8,4 @@
   node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd}";
   kill-opam = "mv ~/.opam ~/_opam";
   revive-opam = "mv ~/_opam ~/.opam";
-} 
+}

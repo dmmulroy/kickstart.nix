@@ -1,9 +1,12 @@
-{ pkgs, config, ... }:
-
-{
+{inputs}: {
+  pkgs,
+  config,
+  ...
+}: {
   # https://mipmip.github.io/home-manager-option-search/
 
-  home.packages = with pkgs; [ 
+  home.packages = with pkgs; [
+    inputs.self.packages.${pkgs.system}.mono-lisa
     bun
     fd
     git
@@ -16,13 +19,15 @@
 
   home.stateVersion = "23.11";
 
-  programs.direnv = { 
-      enable = true;
-      enableZshIntegration = true;
-      # This gets enabled by default when enabling programs.fish
-      # enableFishIntegration = true;
-      nix-direnv.enable = true; 
-    };
+  fonts.fontconfig.enable = true;
+
+  programs.direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    # This gets enabled by default when enabling programs.fish
+    # enableFishIntegration = true;
+    nix-direnv.enable = true;
+  };
 
   programs.fish = {
     enable = true;
@@ -30,12 +35,12 @@
       set fish_greeting # Disable greeting
 
       eval "$(/opt/homebrew/bin/brew shellenv)"
-      
+
       ${builtins.readFile ../config/fish/catppuccin_macchiato_theme.fish}
     '';
     functions = import ../config/fish/functions.nix;
     plugins = [
-      { 
+      {
         name = "z";
         src = pkgs.fishPlugins.z.src;
       }
@@ -48,42 +53,42 @@
     shellAliases = import ../config/fish/aliases.nix;
   };
 
-  programs.fzf = { 
-      enable = true;
-      enableZshIntegration = true;
-      enableFishIntegration = true;
-      colors = {
-        bg = "#24273a";     
-        "bg+" = "#363a4f";  
-        spinner = "#f4dbd6"; 
-        hl = "#ed8796";      
-        fg = "#cad3f5";     
-        header = "#ed8796"; 
-        info = "#c6a0f6";   
-        pointer = "#f4dbd6"; 
-        marker = "#f4dbd6";  
-        "fg+" = "#cad3f5";  
-        prompt = "#c6a0f6";  
-        "hl+" = "#ed8796";   
-      };
-      defaultOptions = [
-       "--bind ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down" 
-       "--preview 'cat {}'"
-      ];
+  programs.fzf = {
+    enable = true;
+    enableZshIntegration = true;
+    enableFishIntegration = true;
+    colors = {
+      bg = "#24273a";
+      "bg+" = "#363a4f";
+      spinner = "#f4dbd6";
+      hl = "#ed8796";
+      fg = "#cad3f5";
+      header = "#ed8796";
+      info = "#c6a0f6";
+      pointer = "#f4dbd6";
+      marker = "#f4dbd6";
+      "fg+" = "#cad3f5";
+      prompt = "#c6a0f6";
+      "hl+" = "#ed8796";
     };
-
-  xdg.configFile = {
-    ghostty = { 
-      source = config.lib.file.mkOutOfStoreSymlink ../config/ghostty; 
-      recursive = true;
-    }; 
+    defaultOptions = [
+      "--bind ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down"
+      "--preview 'cat {}'"
+    ];
   };
 
   xdg.configFile = {
-    nvim = { 
-      source = config.lib.file.mkOutOfStoreSymlink ../config/nvim; 
+    ghostty = {
+      source = config.lib.file.mkOutOfStoreSymlink ../config/ghostty;
       recursive = true;
-    }; 
+    };
+  };
+
+  xdg.configFile = {
+    nvim = {
+      source = config.lib.file.mkOutOfStoreSymlink ../config/nvim;
+      recursive = true;
+    };
   };
 
   programs.neovim = {
@@ -92,7 +97,7 @@
     extraLuaConfig = ''
       require('user')
     '';
-    withNodeJs = true; 
+    withNodeJs = true;
     withPython3 = true;
     withRuby = true;
     vimdiffAlias = true;
@@ -122,7 +127,7 @@
         ];
       };
       lua = {
-        symbol = " "; 
+        symbol = " ";
       };
       git_branch = {
         symbol = " ";
@@ -148,7 +153,7 @@
     '';
     oh-my-zsh = {
       enable = true;
-      plugins = [ "git" "z" ];
+      plugins = ["git" "z"];
       theme = "robbyrussell";
     };
     shellAliases = {

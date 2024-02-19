@@ -1,21 +1,20 @@
-{ username }: { pkgs, ... }:
-{
+{username}: {pkgs, ...}: {
   nix = {
     settings = {
       auto-optimise-store = true;
       builders-use-substitutes = true;
-      experimental-features = [ "flakes" "nix-command" ];
-      substituters = [ "https://nix-community.cachix.org" ];
+      experimental-features = ["flakes" "nix-command"];
+      substituters = ["https://nix-community.cachix.org"];
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ];
-      trusted-users = [ "@wheel" ];
+      trusted-users = ["@wheel"];
       warn-dirty = false;
     };
   };
 
   environment = {
-    shells = [ pkgs.zsh pkgs.fish ];
+    shells = [pkgs.zsh pkgs.fish];
     loginShell = pkgs.fish;
   };
 

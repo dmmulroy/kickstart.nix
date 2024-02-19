@@ -1,5 +1,5 @@
 {
-  description = "Example kickstart Nix on macOS environment.";
+  description = "Kickstart Nix on macOS for Dillon Mulroy (dmmulroy)";
 
   inputs = {
     darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -7,17 +7,38 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     home-manager.url = "github:nix-community/home-manager/release-23.11";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = inputs@{ self, darwin, home-manager, nixpkgs, ... }:
-    let
-      username = "dillon"; 
-      darwin-system = import ./system/darwin.nix { inherit inputs username; };
-    in
-    {
-      darwinConfigurations = {
-        aarch64 = darwin-system "aarch64-darwin";
-        x86_64 = darwin-system "x86_64-darwin";
+  outputs = inputs @ {
+    self,
+    darwin,
+    home-manager,
+    nixpkgs,
+    flake-parts,
+    ...
+  }: let
+    username = "dillon";
+    darwin-system = import ./system/darwin.nix {inherit inputs username;};
+  in
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      flake = {
+        darwinConfigurations = {
+          aarch64 = darwin-system "aarch64-darwin";
+          x86_64 = darwin-system "x86_64-darwin";
+        };
+
+        lib = import ./lib {inherit inputs;};
+      };
+
+      systems = ["aarch64-darwin" "x86_64-darwin"];
+
+      perSystem = {pkgs, ...}: {
+        formatter = pkgs.alejandra;
+
+        packages = {
+          mono-lisa = self.lib.mono-lisa {inherit (pkgs) stdenvNoCC;};
+        };
       };
     };
 }

@@ -14,5 +14,4 @@
       nvim $argv
     end
   '';
-
 }
