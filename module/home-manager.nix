@@ -5,6 +5,10 @@
 }: {
   # https://mipmip.github.io/home-manager-option-search/
 
+  home.stateVersion = "23.11";
+
+  fonts.fontconfig.enable = true;
+
   home.packages = with pkgs; [
     inputs.self.packages.${pkgs.system}.mono-lisa
     bun
@@ -17,14 +21,10 @@
     wget
   ];
 
-  home.stateVersion = "23.11";
-
-  fonts.fontconfig.enable = true;
-
   programs.direnv = {
     enable = true;
     enableZshIntegration = true;
-    # This gets enabled by default when enabling programs.fish
+    # enableFishIntegration gets enabled by default when enabling programs.fish
     # enableFishIntegration = true;
     nix-direnv.enable = true;
   };
@@ -33,8 +33,6 @@
     enable = true;
     interactiveShellInit = ''
       set fish_greeting # Disable greeting
-
-      eval "$(/opt/homebrew/bin/brew shellenv)"
 
       ${builtins.readFile ../config/fish/catppuccin_macchiato_theme.fish}
     '';
@@ -51,6 +49,41 @@
       }
     ];
     shellAliases = import ../config/fish/aliases.nix;
+  };
+
+  programs.git = {
+    enable = true;
+    userEmail = "dillon.mulroy@gmail.com";
+    userName = "Dillon Mulroy";
+    includes = [
+      {
+        condition = "gitdir:~/Code/work/";
+        contents = {
+          user = {
+            name = "Dillon Mulroy";
+            email = "dillon.mulroy@vercel.com";
+          };
+        };
+      }
+    ];
+    aliases = {
+      staash = "stash --all";
+    };
+    extraConfig = {
+      branch.sort = "-committerdate";
+      column.ui = "auto";
+      core = {
+        editor = "nvim";
+        fsmonitor = true;
+      };
+      fetch.prune = true;
+      gpg.format = "ssh";
+      init.defaultBranch = "main";
+      pull.rebase = true;
+      rebase.autoStash = true;
+      rerere.enabled = true;
+      user.signingkey = "~/.ssh/key.pub";
+    };
   };
 
   programs.fzf = {
