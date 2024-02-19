@@ -1,4 +1,9 @@
-{username}: {pkgs, ...}: {
+{username}: {
+  nixpkgs,
+  pkgs,
+  lib,
+  ...
+}: {
   nix = {
     settings = {
       auto-optimise-store = true;

@@ -2,22 +2,26 @@
   pkgs,
   config,
   ...
-}: {
+}: let
+  mono-lisa-font = inputs.self.packages.${pkgs.system}.mono-lisa;
+in {
   # https://mipmip.github.io/home-manager-option-search/
 
   home.stateVersion = "23.11";
 
   fonts.fontconfig.enable = true;
 
+  # TODO: Remove TS/JS dev deps and use devshells
   home.packages = with pkgs; [
-    inputs.self.packages.${pkgs.system}.mono-lisa
-    bun
+    bun 
+    eslint_d
     fd
     git
-    prettierd
-    rectangle
+    mono-lisa-font
+    prettierd 
     ripgrep
     tree
+    typescript
     wget
   ];
 
