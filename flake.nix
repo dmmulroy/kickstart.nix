@@ -18,7 +18,7 @@
     flake-parts,
     ...
   }: let
-    username = "dillon";
+    username = "dmmulroy";
     darwin-system = import ./system/darwin.nix {inherit inputs username;};
   in
     flake-parts.lib.mkFlake {inherit inputs;} {
@@ -38,6 +38,10 @@
 
         packages = {
           mono-lisa = self.lib.mono-lisa {inherit (pkgs) stdenvNoCC;};
+          catppuccin-tmux = self.lib.catppuccin-tmux {
+            inherit (pkgs.tmuxPlugins) mkTmuxPlugin;
+            inherit (pkgs) fetchFromGitHub;
+          };
         };
       };
     };

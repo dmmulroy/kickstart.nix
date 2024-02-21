@@ -4,6 +4,7 @@
   ...
 }: let
   mono-lisa-font = inputs.self.packages.${pkgs.system}.mono-lisa;
+  catppuccin-tmux = inputs.self.packages.${pkgs.system}.catppuccin-tmux;
 in {
   # https://mipmip.github.io/home-manager-option-search/
 
@@ -13,15 +14,10 @@ in {
 
   # TODO: Remove TS/JS dev deps and use devshells
   home.packages = with pkgs; [
-    bun 
-    eslint_d
     fd
-    git
     mono-lisa-font
-    prettierd 
     ripgrep
     tree
-    typescript
     wget
   ];
 
@@ -134,6 +130,10 @@ in {
     extraLuaConfig = ''
       require('user')
     '';
+    extraPackages = [
+      # Included of nil_ls
+      pkgs.cargo
+    ];
     withNodeJs = true;
     withPython3 = true;
     withRuby = true;
@@ -177,7 +177,34 @@ in {
 
   programs.tmux = {
     enable = true;
+    shell = "${pkgs.fish}/bin/fish";
     extraConfig = builtins.readFile ../config/tmux/tmux.conf;
+    plugins = [
+      pkgs.tmuxPlugins.vim-tmux-navigator
+
+      {
+        plugin = catppuccin-tmux;
+        extraConfig = builtins.readFile ../config/tmux/catppuccin.conf;
+      }
+
+      {
+        plugin = pkgs.tmuxPlugins.resurrect;
+        extraConfig = ''
+          set -g @resurrect-strategy-vim 'session'
+          set -g @resurrect-strategy-nvim 'session'
+          set -g @resurrect-capture-pane-contents 'on'
+        '';
+      }
+
+      {
+        plugin = pkgs.tmuxPlugins.continuum;
+        extraConfig = ''
+          set -g @continuum-restore 'on'
+          set -g @continuum-boot 'on'
+          set -g @continuum-save-interval '10'
+        '';
+      }
+    ];
   };
 
   programs.zsh = {
