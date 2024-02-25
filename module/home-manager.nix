@@ -12,7 +12,6 @@ in {
 
   fonts.fontconfig.enable = true;
 
-  # TODO: Remove TS/JS dev deps and use devshells
   home.packages = with pkgs; [
     fd
     mono-lisa-font
@@ -69,6 +68,9 @@ in {
     aliases = {
       staash = "stash --all";
     };
+    lfs = {
+      enable = true;
+    };
     extraConfig = {
       branch.sort = "-committerdate";
       column.ui = "auto";
@@ -76,7 +78,10 @@ in {
         editor = "nvim";
         fsmonitor = true;
       };
-      fetch.prune = true;
+      fetch = {
+        prune = true;
+        writeCommitGraph = true;
+      };
       gpg.format = "ssh";
       init.defaultBranch = "main";
       pull.rebase = true;
@@ -163,11 +168,14 @@ in {
           "Packages.props"
         ];
       };
+      git_branch = {
+        symbol = " ";
+      };
       lua = {
         symbol = " ";
       };
-      git_branch = {
-        symbol = " ";
+      nix_shell = {
+        symbol = " ";
       };
       package = {
         disabled = true;
