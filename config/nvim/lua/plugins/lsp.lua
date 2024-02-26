@@ -101,10 +101,10 @@ return {
 						},
 					},
 					handlers = {
-						["textDocument/publishDiagnostics"] = vim.lsp.with(
-							tsserver_on_publish_diagnostics_override,
-							{}
-						),
+						--[[ ["textDocument/publishDiagnostics"] = vim.lsp.with(
+              tsserver_on_publish_diagnostics_override,
+              {}
+            ), ]]
 					},
 				},
 				yamlls = {},
