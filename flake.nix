@@ -18,7 +18,7 @@
     flake-parts,
     ...
   }: let
-    username = "dmmulroy";
+    username = "dillon";
     darwin-system = import ./system/darwin.nix {inherit inputs username;};
   in
     flake-parts.lib.mkFlake {inherit inputs;} {
