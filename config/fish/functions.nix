@@ -1,4 +1,14 @@
 {
+  gpr = ''
+    if test (count $argv) -ne 1
+        echo "Usage: gpr <pull_request_number>"
+        return 1
+    end
+
+    set pr_num $argv[1]
+    git fetch origin pull/$pr_num/head:pr$pr_num
+    git checkout pr$pr_num
+  '';
   fvim = ''
     if test (count $argv) -eq 0
       fd -t f | fzf --header "Open File in Vim" --preview "cat {}" | xargs nvim
