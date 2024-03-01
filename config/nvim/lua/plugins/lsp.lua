@@ -72,6 +72,7 @@ return {
         vim.lsp.diagnostic.on_publish_diagnostics(_, result, ctx, config)
       end
 
+<<<<<<< Updated upstream
       -- LSP servers to install (see list here: https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers )
       local servers = {
         bashls = {},
@@ -118,6 +119,51 @@ return {
         },
         yamlls = {},
       }
+=======
+			-- LSP servers to install (see list here: https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers )
+			local servers = {
+				bashls = {},
+				-- clangd = {},
+				cssls = {},
+				gleam = {},
+				graphql = {},
+				html = {},
+				jsonls = {},
+				lua_ls = {
+					settings = {
+						Lua = {
+							workspace = { checkThirdParty = false },
+							telemetry = { enabled = false },
+						},
+					},
+				},
+				marksman = {},
+				nil_ls = {},
+				ocamllsp = {},
+				prismals = {},
+				pyright = {},
+				solidity = {},
+				sqlls = {},
+				tailwindcss = {
+					-- filetypes = { "reason" },
+				},
+				tsserver = {
+					settings = {
+						experimental = {
+							enableProjectDiagnostics = false,
+						},
+						maxTsServerMemory = 12000,
+					},
+					handlers = {
+						["textDocument/publishDiagnostics"] = vim.lsp.with(
+							tsserver_on_publish_diagnostics_override,
+							{}
+						),
+					},
+				},
+				yamlls = {},
+			}
+>>>>>>> Stashed changes
 
       -- Default handlers for LSP
       local default_handlers = {
@@ -134,6 +180,7 @@ return {
         -- Pass the current buffer to map lsp keybinds
         map_lsp_keybinds(buffer_number)
 
+<<<<<<< Updated upstream
         -- Create a command `:Format` local to the LSP buffer
         vim.api.nvim_buf_create_user_command(buffer_number, "Format", function(_)
           vim.lsp.buf.format({
@@ -153,6 +200,18 @@ return {
         -- 	})
         -- end
       end
+=======
+				-- Create a command `:Format` local to the LSP buffer
+				vim.api.nvim_buf_create_user_command(buffer_number, "Format", function(_)
+					vim.lsp.buf.format({
+						filter = function(format_client)
+							-- Use Prettier to format TS/JS if it's available
+							return format_client.name ~= "tsserver" or not null_ls.is_registered("prettierd")
+						end,
+					})
+				end, { desc = "LSP: Format current buffer with LSP" })
+			end
+>>>>>>> Stashed changes
 
       -- Iterate over our servers and set them up
       for name, config in pairs(servers) do
