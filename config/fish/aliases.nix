@@ -7,7 +7,15 @@
   ks = "tmux kill-server";
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
   node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd, bun, biome}";
+=======
+  node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd, nodePackages.pnpm, bun}";
+>>>>>>> Stashed changes
+=======
+  node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd, nodePackages.pnpm, bun}";
+>>>>>>> Stashed changes
 =======
   node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd, nodePackages.pnpm, bun}";
 >>>>>>> Stashed changes
