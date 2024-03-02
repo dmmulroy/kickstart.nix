@@ -144,7 +144,7 @@ in {
       require('user')
     '';
     extraPackages = [
-      # Included of nil_ls
+      # Included for nil_ls
       pkgs.cargo
     ];
     withNodeJs = true;
