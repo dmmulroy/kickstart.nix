@@ -6,5 +6,5 @@
   grep = "grep --color=auto --exclude-dir={.bzr,CVS,.git,.hg,.svn,.idea,.tox}";
   ks = "tmux kill-server";
   node-shell = "nix shell nixpkgs#{nodejs_21, typescript, eslint_d, prettierd, nodePackages.pnpm, bun}";
-  opam-shell = "nix shell nixpkgs#opam --system aarch64-darwin";
+  opam-shell = "nix shell nixpkgs#opam nixpkgs#dune_3 --system aarch64-darwin";
 }
