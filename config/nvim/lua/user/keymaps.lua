@@ -183,7 +183,9 @@ nnoremap("<leader>m", ":MaximizerToggle<cr>")
 nnoremap("<leader>=", "<C-w>=")
 
 -- Press leader f to format
-nnoremap("<leader>f", ":Format<cr>")
+nnoremap("<leader>f", function()
+	vim.lsp.buf.format()
+end, { desc = "Format the current buffer" })
 
 -- Press leader rw to rotate open windows
 nnoremap("<leader>rw", ":RotateWindows<cr>", { desc = "[R]otate [W]indows" })
