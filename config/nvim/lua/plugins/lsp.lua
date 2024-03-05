@@ -80,7 +80,7 @@ return {
 			--  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
 			--  - settings (table): Override the default settings passed when initializing the server.
 			--        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
-			local servers_and_tools = {
+			local servers = {
 				-- LSP Servers
 				bashls = {},
 				cssls = {},
@@ -104,6 +104,7 @@ return {
 					},
 				},
 				marksman = {},
+				ocamllsp = {},
 				nil_ls = {},
 				pyright = {},
 				sqlls = {},
@@ -120,25 +121,25 @@ return {
 					},
 				},
 				yamlls = {},
+			}
 
-				-- Formatters
+			local formatters = {
 				prettierd = {},
 				stylua = {},
+			}
 
-				-- Linters
+			local linters = {
 				eslint_d = {},
 			}
 
-			local ensure_installed = vim.tbl_keys(servers_and_tools)
+			local manually_installed_servers = { "ocamllsp" }
 
-			-- Setup mason so it can manage 3rd party LSP servers
-			require("mason").setup({
-				ui = {
-					border = "rounded",
-				},
-			})
+			local mason_tools_to_install = vim.tbl_keys(vim.tbl_deep_extend("force", {}, servers, formatters, linters))
 
-			-- Configure mason to auto install servers
+			local ensure_installed = vim.tbl_filter(function(name)
+				return not vim.tbl_contains(manually_installed_servers, name)
+			end, mason_tools_to_install)
+
 			require("mason-tool-installer").setup({
 				auto_update = true,
 				run_on_start = true,
@@ -147,20 +148,25 @@ return {
 				ensure_installed = ensure_installed,
 			})
 
-			require("mason-lspconfig").setup({
-				handlers = {
-					function(server_name)
-						local server = servers_and_tools[server_name] or {}
-						-- This handles overriding only values explicitly passed
-						-- by the server configuration above. Useful when disabling
-						-- certain features of an LSP (for example, turning off formatting for tsserver)
-						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-						server.on_attach = on_attach
-						server.handlers = vim.tbl_deep_extend("force", {}, default_handlers, server.handlers or {})
-						require("lspconfig")[server_name].setup(server)
-					end,
+			-- Iterate over our servers and set them up
+			for name, config in pairs(servers) do
+				require("lspconfig")[name].setup({
+					capabilities = capabilities,
+					filetypes = config.filetypes,
+					handlers = vim.tbl_deep_extend("force", {}, default_handlers, config.handlers or {}),
+					on_attach = on_attach,
+					settings = config.settings,
+				})
+			end
+
+			-- Setup mason so it can manage 3rd party LSP servers
+			require("mason").setup({
+				ui = {
+					border = "rounded",
 				},
 			})
+
+			require("mason-lspconfig").setup()
 
 			-- Configure borderd for LspInfo ui
 			require("lspconfig.ui.windows").default_options.border = "rounded"
@@ -182,8 +188,8 @@ return {
 				lsp_fallback = true,
 			},
 			formatters_by_ft = {
-				javascript = { { "elint_d", "eslint" }, { "prettierd", "prettier" } },
-				typescript = { { "elint_d", "eslint" }, { "prettierd", "prettier" } },
+				javascript = { { "eslint_d", "eslint" }, { "prettierd", "prettier" } },
+				typescript = { { "eslint_d", "eslint" }, { "prettierd", "prettier" } },
 				lua = { "stylua" },
 			},
 		},
