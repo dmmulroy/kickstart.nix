@@ -15,13 +15,6 @@ return {
 			-- Progress/Status update for LSP
 			{ "j-hui/fidget.nvim", opts = {} },
 
-			-- Install predefined helpers/config for efmls lsp to run eslint_d as
-			-- an lsp server
-			{
-				"creativenull/efmls-configs-nvim",
-				version = "v1.x.x",
-			},
-
 			-- Install lsp autocompletions
 			"hrsh7th/cmp-nvim-lsp",
 
@@ -93,19 +86,9 @@ return {
 				bashls = {},
 				cssls = {},
 				gleam = {},
+				eslint = {},
 				html = {},
 				jsonls = {},
-				efm = {
-					filetypes = { "typescript" },
-					settings = {
-						rootMarkers = { ".git/" },
-						languages = { typescript = { require("efmls-configs.linters.eslint_d") } },
-					},
-					init_options = {
-						documentFormatting = false,
-						documentRangeFormatting = false,
-					},
-				},
 				lua_ls = {
 					settings = {
 						Lua = {
@@ -148,13 +131,9 @@ return {
 				stylua = {},
 			}
 
-			local linters = {
-				eslint_d = {},
-			}
-
 			local manually_installed_servers = { "ocamllsp", "gleam" }
 
-			local mason_tools_to_install = vim.tbl_keys(vim.tbl_deep_extend("force", {}, servers, formatters, linters))
+			local mason_tools_to_install = vim.tbl_keys(vim.tbl_deep_extend("force", {}, servers, formatters))
 
 			local ensure_installed = vim.tbl_filter(function(name)
 				return not vim.tbl_contains(manually_installed_servers, name)
@@ -201,16 +180,19 @@ return {
 	},
 	{
 		"stevearc/conform.nvim",
+		event = { "BufWritePre" },
+		cmd = { "ConformInfo" },
 		opts = {
 			notify_on_error = true,
-			format_after_save = {
+			format_on_save = {
 				async = true,
 				timeout_ms = 500,
 				lsp_fallback = true,
 			},
 			formatters_by_ft = {
-				javascript = { { "eslint_d", "eslint" }, { "prettierd", "prettier" } },
-				typescript = { { "eslint_d", "eslint" }, { "prettierd", "prettier" } },
+				javascript = { { "prettierd", "prettier" } },
+				typescript = { { "prettierd", "prettier" } },
+				typescriptreact = { { "prettierd", "prettier" } },
 				lua = { "stylua" },
 			},
 		},
