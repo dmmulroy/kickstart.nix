@@ -115,6 +115,9 @@ return {
 				tsserver = {
 					settings = {
 						maxTsServerMemory = 12000,
+						typescript = {
+							preferGoToSourceDefinition = true,
+						},
 					},
 					handlers = {
 						["textDocument/publishDiagnostics"] = vim.lsp.with(
