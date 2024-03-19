@@ -45,7 +45,7 @@ palette = 15=#A5ADCB
 # Font family
 font-family = MonoLisa
 font-style = Regular
-font-style-italic = Semibold Italic
+font-style-italic = Regular Italic
 font-style-bold = Bold
 font-style-bold-italic = Bold Italic
 
