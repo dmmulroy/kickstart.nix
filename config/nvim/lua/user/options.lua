@@ -2,6 +2,9 @@
 vim.opt.nu = true
 vim.opt.rnu = true
 
+-- Disable showing the mode below the statusline
+vim.opt.showmode = false
+
 -- Set tabs to 2 spaces
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
