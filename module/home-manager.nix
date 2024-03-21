@@ -68,16 +68,7 @@ in {
     ];
     aliases = {
       staash = "stash --all";
-      lg = ''
-        git log \
-        --color=always  \
-        --graph  \
-        --decorate \
-        --abbrev-commit \
-        --date=relative \
-        --format=format:'  %C(auto)%h %C(bold blue)%an %C(bold green)%ad %C(auto)%d%n  │  %C(white)%s%C(reset)' --all -n 20 | \
-        sed 's/\(\(origin\/\)\?[a-zA-Z0-9-]*\/[a-zA-Z]*-[0-9]*\)-[a-zA-Z0-9-]*/\1/g'
-      '';
+      lg = "!fish -c 'git_log_n $argv'";
     };
     lfs = {
       enable = true;
