@@ -87,6 +87,7 @@ in {
       gpg.format = "ssh";
       init.defaultBranch = "main";
       pull.rebase = true;
+      rebase.updateRefs = true;
       rerere.enabled = true;
       user.signingkey = "~/.ssh/key.pub";
     };
