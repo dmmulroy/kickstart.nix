@@ -1,8 +1,6 @@
 # Disable greeting
 set fish_greeting 
+set -gx EDITOR 'nvim'
 
-# Source theme, aliases, and functions
-source ./catppuccin_macchiato_theme.fish
-source ./aliases.fish
-source ./functions.fish
-
+# Brew
+set -U fish_user_paths /opt/homebrew/bin $fish_user_paths
