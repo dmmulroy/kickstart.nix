@@ -71,7 +71,7 @@ return {
 				function()
 					Snacks.notifier.show_history()
 				end,
-				desc = "Notification History",
+				desc = "[N]otification [H]istory",
 			},
 			{
 				"<leader>dn",
@@ -80,13 +80,7 @@ return {
 				end,
 				desc = "[D]ismiss All [N]otifications",
 			},
-			{
-				"<leader>nh",
-				function()
-					Snacks.notifier.show_history()
-				end,
-				desc = "[N]otification [H]istory",
-			},
+
 			{
 				"<leader>ln",
 				function()
