@@ -58,6 +58,25 @@ describe("DefaultSkillLocator", () => {
     assert.equal(files.length, 1);
     assert.equal(files[0]?.source.kind, "global");
   });
+
+  it("deduplicates symlinked skill files when their parent roots are distinct", async () => {
+    const globalSkillFile = "/home/tester/.agents/skills/code-review/SKILL.md";
+    const projectSkillFile = "/home/tester/.dotfiles/home/.agents/skills/code-review/SKILL.md";
+    const fs = new MemoryTreeFileSystem(
+      [globalSkillFile, projectSkillFile],
+      new Map([
+        [globalSkillFile, projectSkillFile],
+        [projectSkillFile, projectSkillFile],
+      ]),
+    );
+    const locator = new DefaultSkillLocator(fs);
+
+    const files = await locator.findSkillFiles("/home/tester/.dotfiles/home");
+
+    assert.equal(files.length, 1);
+    assert.equal(files[0]?.filePath, globalSkillFile);
+    assert.equal(files[0]?.source.kind, "global");
+  });
 });
 
 function restoreEnv(name: string, value: string | undefined): void {
