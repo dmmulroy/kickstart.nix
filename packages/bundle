@@ -2,6 +2,7 @@
 # Note: require_sha disabled to prevent installation failures
 cask_args appdir: "/Applications"
 
+tap "abue-ammar/tinycast"
 tap "dmmulroy/tap"
 tap "plannotator/tap"
 
@@ -49,8 +50,8 @@ cask "elgato-stream-deck"
 cask "ghostty"
 cask "obs"
 cask "orbstack"
-cask "raycast"
 cask "scroll-reverser"
 # cask "spotify"
+cask "abue-ammar/tinycast/tinycast"
 cask "yaak@beta"
 
