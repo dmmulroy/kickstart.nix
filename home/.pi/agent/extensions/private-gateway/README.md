@@ -46,6 +46,15 @@ The well-known endpoint and one authenticated remote config define trusted route
 
 Unsupported list endpoints may fall back to filtered Pi built-ins. Authentication, transient, malformed, pagination, and cancellation failures remain unknown and retain the previous successful catalog. Models without trustworthy token-limit metadata are not exposed.
 
+### Classifier models
+
+Workers AI routes also expose Pi's Cloudflare-hosted (`@cf/`) classifier models, such as Clef and Clef Flash, for codemode `models.classify()` and extension `ctx.modelRegistry.classify()`. They never appear in `/model`.
+
+- Transport: `POST {inferenceOrigin}/workers-ai/run/{model}` with the flat System One body. AI Gateway serves `run/` through its account-bound Workers AI binding, so the Access token is the only credential. `/workers-ai/{model}` without `run/` forwards to the public REST API and returns 401.
+- Membership: gateway model lists and OpenCode allowlists describe chat models only, so Pi's catalog supplies classifier candidates. Server blacklists and profile filters still apply. Third-party Workers AI classifiers (for example `typesafe/jev`) are excluded because they bill gateway credits.
+- Metadata: `GATEWAY_WORKERS_AI_CLASSIFIER_OVERLAY` in `gateway-classifier.ts` adds Cloudflare-hosted classifiers Pi's catalog lacks (Clef Omni) and corrects stale entries (Clef Flash's 24K context and price). A test fails once Pi's catalog matches an entry; delete it then.
+- Parsing, `bool`/`noul` mapping, usage, cost, and retries stay in Pi's shared System One implementation; `gateway-classifier.ts` supplies only the transport.
+
 Pi owns model persistence, inference streaming, tools, retries, and compaction. The extension owns Access authentication, route discovery, inventory, catalog projection, and explicit filtering.
 
 ## Authentication

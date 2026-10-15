@@ -1,12 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { isModelType, type Api, type Model } from "@earendil-works/pi-ai";
 import { HttpGatewayDiscovery, type GatewayModelMetadata } from "./gateway-discovery.ts";
 import { HttpGatewayInventory, diffGatewayInventories } from "./gateway-inventory.ts";
 import { GatewayRequestError } from "./gateway-http.ts";
 import { NativeGatewayCatalog } from "./gateway-catalog.ts";
+import { GATEWAY_WORKERS_AI_CLASSIFIER_OVERLAY } from "./gateway-classifier.ts";
+import { getBuiltinClassifierModels } from "@earendil-works/pi-ai/providers/all";
 import { RecordingGatewayHttp, exampleGatewayProfile, exampleGatewayToken } from "./gateway-test-fixtures.ts";
 
 const profile = exampleGatewayProfile(), token = exampleGatewayToken(), signal = new AbortController().signal;
+/** Chat-only view of a mixed catalog entry. */
+function chat(model: Parameters<typeof isModelType>[0] | undefined): Model<Api> | undefined {
+	return model && isModelType(model, "chat") ? model : undefined;
+}
 
 test("well-known merges authenticated remote configuration without executing advertised commands", async () => {
 	const http = new RecordingGatewayHttp((_url, operation) => operation === "discovery" ? {
@@ -95,7 +102,7 @@ test("new Anthropic models use live adaptive-thinking capabilities, not hardcode
 	});
 	const discovery = await new HttpGatewayDiscovery(http).loadDiscovery(profile, token, signal); assert.ok(discovery.ok);
 	const result = await new NativeGatewayCatalog(new HttpGatewayInventory(http)).loadCatalog(profile, discovery.value, token, signal); assert.ok(result.ok);
-	const model = result.value.models[0]; assert.ok(model);
+	const model = chat(result.value.models[0]); assert.ok(model);
 	assert.equal(model.contextWindow, 250_000);
 	assert.deepEqual(model.input, ["text", "image"]);
 	assert.equal(model.thinkingLevelMap?.off, null);
@@ -155,7 +162,7 @@ test("a declared alias overlays its live request ID and keeps authoritative live
 	assert.equal(result.value.models[0]?.id, "example-live-model");
 	assert.equal(result.value.models[0]?.name, "Friendly");
 	assert.equal(result.value.models[0]?.contextWindow, 400_000);
-	assert.equal(result.value.models[0]?.maxTokens, 32_000);
+	assert.equal(chat(result.value.models[0])?.maxTokens, 32_000);
 	assert.deepEqual(result.value.models[0]?.input, ["text", "image"]);
 });
 
@@ -206,4 +213,63 @@ test("unknown catalog IDs without token-limit metadata are reported, never assig
 	assert.equal(result.value.models.length, 0);
 	assert.match(result.value.warnings.join(), /1 listed IDs/);
 	assert.doesNotMatch(result.value.warnings.join(), /example-unknown-model/);
+});
+
+test("Workers AI routes expose Cloudflare-hosted classifiers on the provider-native run route", async () => {
+	const http = new RecordingGatewayHttp((_url, operation) => operation === "discovery" ? {
+		enabled_providers: ["openai", "cloudflare-workers-ai"],
+		provider: {
+			openai: { models: { "gpt-4o": {} }, whitelist: ["gpt-4o"] },
+			// Chat allowlists describe chat models only; blacklists still remove classifiers.
+			"cloudflare-workers-ai": { options: { baseURL: `${profile.inferenceOrigin}/workers-ai/v1` }, whitelist: ["@cf/example-chat"], blacklist: ["@cf/cloudflare/clef-flash"],
+				models: { "@cf/example-chat": { limit: { context: 1000, output: 100 } } } },
+		},
+	} : { data: [] });
+	const discovery = await new HttpGatewayDiscovery(http).loadDiscovery(profile, token, signal); assert.ok(discovery.ok);
+	const result = await new NativeGatewayCatalog(new HttpGatewayInventory(http)).loadCatalog(profile, discovery.value, token, signal); assert.ok(result.ok);
+	const classifiers = result.value.models.filter((model) => isModelType(model, "classifier"));
+	assert.deepEqual(classifiers.map((model) => model.id), ["@cf/cloudflare/clef", "@cf/cloudflare/clef-omni"]);
+	const clef = classifiers[0]; assert.ok(clef);
+	assert.equal(clef.provider, profile.id);
+	assert.equal(clef.api, "cloudflare-workers-ai-system-one");
+	assert.equal(clef.baseUrl, `${profile.inferenceOrigin}/workers-ai`);
+	assert.ok(clef.contextWindow > 0 && clef.cost.input > 0, "Pi catalog metadata is preserved");
+	// Third-party Workers AI classifiers bill gateway credits instead of the account binding.
+	assert.ok(!result.value.models.some((model) => model.id.includes("jev")));
+	assert.deepEqual(result.value.models.filter((model) => isModelType(model, "chat")).map((model) => model.id).sort(), ["@cf/example-chat", "gpt-4o"]);
+});
+
+test("an explicit classifier include loads its route without unrelated backends", async () => {
+	const http = new RecordingGatewayHttp((_url, operation) => operation === "discovery" ? {
+		enabled_providers: ["openai", "cloudflare-workers-ai"], provider: { openai: { whitelist: ["gpt-4o"] }, "cloudflare-workers-ai": { whitelist: [] } },
+	} : { data: [] });
+	const scoped = exampleGatewayProfile("example", { include: ["@cf/cloudflare/clef"] });
+	const discovery = await new HttpGatewayDiscovery(http).loadDiscovery(scoped, token, signal); assert.ok(discovery.ok);
+	const result = await new NativeGatewayCatalog(new HttpGatewayInventory(http)).loadCatalog(scoped, discovery.value, token, signal); assert.ok(result.ok);
+	assert.ok(result.value.models.some((model) => model.id === "@cf/cloudflare/clef"));
+	assert.ok(!result.value.models.some((model) => model.id === "gpt-4o"));
+});
+
+test("the classifier overlay adds models Pi lacks and corrects stale Pi metadata", async () => {
+	const http = new RecordingGatewayHttp((_url, operation) => operation === "discovery" ? { enabled_providers: ["cloudflare-workers-ai"] } : { data: [] });
+	const discovery = await new HttpGatewayDiscovery(http).loadDiscovery(profile, token, signal); assert.ok(discovery.ok);
+	const result = await new NativeGatewayCatalog(new HttpGatewayInventory(http)).loadCatalog(profile, discovery.value, token, signal); assert.ok(result.ok);
+	const classifiers = new Map(result.value.models.filter((model) => isModelType(model, "classifier")).map((model) => [model.id, model]));
+	const omni = classifiers.get("@cf/cloudflare/clef-omni"); assert.ok(omni);
+	assert.deepEqual({ provider: omni.provider, baseUrl: omni.baseUrl, api: omni.api, input: omni.input, contextWindow: omni.contextWindow, cost: omni.cost }, {
+		provider: profile.id, baseUrl: `${profile.inferenceOrigin}/workers-ai`, api: "cloudflare-workers-ai-system-one", input: ["text"], contextWindow: 64_000,
+		cost: { input: 0.15, output: 0, cacheRead: 0, cacheWrite: 0 },
+	});
+	const flash = classifiers.get("@cf/cloudflare/clef-flash"); assert.ok(flash);
+	assert.equal(flash.contextWindow, 24_000); assert.equal(flash.cost.input, 0.038);
+	assert.equal(classifiers.get("@cf/cloudflare/clef")?.cost.input, 0.24, "non-overlaid entries keep Pi metadata");
+});
+
+test("overlay entries are still needed: delete any entry Pi's catalog now matches", () => {
+	const builtins = new Map(getBuiltinClassifierModels("cloudflare-workers-ai").map((model) => [model.id, model]));
+	for (const [id, overlay] of Object.entries(GATEWAY_WORKERS_AI_CLASSIFIER_OVERLAY)) {
+		const builtin = builtins.get(id);
+		const current = builtin && builtin.name === overlay.name && builtin.contextWindow === overlay.contextWindow && builtin.cost.input === overlay.inputCostPerMillion;
+		assert.ok(!current, `${id}: Pi's catalog has caught up; remove it from GATEWAY_WORKERS_AI_CLASSIFIER_OVERLAY`);
+	}
 });

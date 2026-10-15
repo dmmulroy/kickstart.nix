@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { inspect } from "node:util";
 import { test } from "node:test";
-import { createModels, InMemoryCredentialStore, InMemoryModelsStore } from "@earendil-works/pi-ai";
+import { createModels, InMemoryCredentialStore, InMemoryModelsStore, type ClassifierContext } from "@earendil-works/pi-ai";
 import { GatewayAccessToken, createGatewayAccessAuth } from "./gateway-auth.ts";
 import { HttpGatewayDiscovery } from "./gateway-discovery.ts";
 import { HttpGatewayInventory } from "./gateway-inventory.ts";
@@ -96,4 +96,54 @@ test("native OpenAI streaming preserves Access headers, request hooks, and safe 
 	const blocked = await models.completeSimple({ ...model, baseUrl: "https://untrusted.test/openai" }, context, { fetch: wireFetch });
 	assert.equal(blocked.stopReason, "error"); assert.equal(requests, 1);
 	assert.equal(handle.sanitizeError(`upstream echoed ${token.reveal()}`), "upstream echoed <redacted>");
+});
+
+test("classifiers use the Workers AI run route with Access headers, Pi answer mapping, and origin enforcement", async () => {
+	const http = new RecordingGatewayHttp(() => ({ enabled_providers: ["cloudflare-workers-ai"], provider: { "cloudflare-workers-ai": { whitelist: [] } } }));
+	const handle = makeHandle(http);
+	const models = createModels({ credentials: new InMemoryCredentialStore(), modelsStore: new InMemoryModelsStore() });
+	models.setProvider(handle.provider);
+	await models.login(profile.id, "api_key", { prompt: async () => token.reveal(), notify() {} });
+	await models.refresh();
+	assert.equal(models.getModels(profile.id).length, 0, "classifiers never appear as chat models");
+	const clef = models.getModelOfType("classifier", profile.id, "@cf/cloudflare/clef"); assert.ok(clef);
+	const requests: { url: string; body: unknown }[] = [];
+	const wireFetch: typeof fetch = async (input, init) => {
+		const headers = new Headers(init?.headers);
+		assert.equal(headers.get("cf-access-token"), token.reveal());
+		requests.push({ url: String(input), body: JSON.parse(String(init?.body)) });
+		return Response.json({ model: "clef", answers: {
+			urgent: { type: "noul", noul: 0.98 },
+			team: { type: "choice", choice: "technical", probabilities: { billing: 0.2, technical: 0.8 }, confidence: 0.6 },
+		}, usage: { input_tokens: 10, output_tokens: 0 } });
+	};
+	const context: ClassifierContext = { state: { message: "Checkout fails for everyone" }, questions: {
+		urgent: { type: "bool", instructions: "Urgent?", criteria: { true: "Urgent", false: "Not urgent" } },
+		team: { type: "choice", instructions: "Team?", criteria: { billing: "Payments", technical: "Outages" } },
+	} };
+	const result = await models.classify(clef, context, { fetch: wireFetch });
+	assert.equal(result.stopReason, "stop", result.errorMessage ?? "classification failed");
+	assert.deepEqual(result.answers.urgent, { type: "bool", probability: 0.98 });
+	assert.equal(result.answers.team?.type === "choice" && result.answers.team.choice, "technical");
+	assert.equal(result.usage?.input, 10);
+	assert.equal(requests[0]?.url, `${profile.inferenceOrigin}/workers-ai/run/@cf/cloudflare/clef`);
+	assert.deepEqual(requests[0]?.body, { state: context.state, questions: {
+		urgent: { type: "noul", instructions: "Urgent?", criteria: { true: "Urgent", false: "Not urgent" } },
+		team: { type: "choice", instructions: "Team?", criteria: { billing: "Payments", technical: "Outages" } },
+	} });
+	const blocked = await models.classify({ ...clef, baseUrl: "https://untrusted.test/workers-ai" }, context, { fetch: wireFetch });
+	assert.equal(blocked.stopReason, "error"); assert.equal(requests.length, 1);
+	handle.setModelFilter({ exclude: ["@cf/cloudflare/clef"] });
+	assert.equal(models.getModelOfType("classifier", profile.id, "@cf/cloudflare/clef"), undefined);
+});
+
+test("gateway run output accepts bare, enveloped, and run-record shapes and reports failures", async () => {
+	const { gatewayWorkersAiRunOutput } = await import("./gateway-classifier.ts");
+	const output = { answers: {}, usage: {} };
+	assert.equal(gatewayWorkersAiRunOutput(output), output);
+	assert.equal(gatewayWorkersAiRunOutput({ success: true, result: output }), output);
+	assert.equal(gatewayWorkersAiRunOutput({ success: true, result: { state: "Completed", result: output } }), output);
+	assert.throws(() => gatewayWorkersAiRunOutput({ success: false, errors: [{ message: "Insufficient balance" }] }), /Insufficient balance/);
+	assert.throws(() => gatewayWorkersAiRunOutput({ success: true, result: { state: "Queued" } }), /did not complete/);
+	assert.throws(() => gatewayWorkersAiRunOutput("nope"), /unexpected response/);
 });

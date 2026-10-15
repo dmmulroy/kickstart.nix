@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile, readFile, rm, symlink, lstat, stat } from "node:fs/promises";
+import { mkdtemp, realpath, writeFile, readFile, rm, symlink, lstat, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -30,7 +30,8 @@ test("include omission, empty include, and exclude-wins are different policies",
 });
 
 test("filter saves are atomic, preserve stow symlinks and other profiles, and reject stale writers", async () => {
-	const directory = await mkdtemp(join(tmpdir(), "gateway-settings-test-"));
+	// The settings writer resolves symlinks; resolve the temp root too (macOS /var → /private/var).
+	const directory = await realpath(await mkdtemp(join(tmpdir(), "gateway-settings-test-")));
 	try {
 		const canonical = join(directory, "canonical.json"), link = join(directory, "settings.json");
 		await writeFile(canonical, JSON.stringify({ profiles }));

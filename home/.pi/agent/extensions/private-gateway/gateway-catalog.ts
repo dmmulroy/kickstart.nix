@@ -1,7 +1,8 @@
-import type { Api, Model } from "@earendil-works/pi-ai";
-import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
+import type { Api, ClassifierModel, Model } from "@earendil-works/pi-ai";
+import { getBuiltinClassifierModels, getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
 import type { GatewayAccessToken } from "./gateway-auth.ts";
 import type { GatewayApi } from "./gateway-api.ts";
+import { GATEWAY_WORKERS_AI_CLASSIFIER_API, GATEWAY_WORKERS_AI_CLASSIFIER_OVERLAY, GATEWAY_WORKERS_AI_RUN_PATH, type GatewayClassifierApi } from "./gateway-classifier.ts";
 import { gatewayDeclaredRequestId, type GatewayBackend, type GatewayDiscovery, type GatewayModelMetadata, type GatewayRoute } from "./gateway-discovery.ts";
 import { GatewayRequestError } from "./gateway-http.ts";
 import type { HttpGatewayInventory } from "./gateway-inventory.ts";
@@ -16,9 +17,11 @@ export class GatewayCatalogError extends Error {
 		super(`Private gateway catalog: ${backend}: ${reason}`);
 	}
 }
+/** Every model type a gateway profile can expose. */
+export type GatewayModel = Model<GatewayApi> | ClassifierModel<GatewayClassifierApi>;
 /** A raw Pi catalog before local visibility filters, with bounded non-sensitive diagnostic warnings. */
 export interface GatewayCatalog {
-	readonly models: readonly Model<GatewayApi>[];
+	readonly models: readonly GatewayModel[];
 	readonly warnings: readonly string[];
 }
 
@@ -28,6 +31,39 @@ const DEFAULT_APIS: Record<GatewayBackend, GatewayApi> = {
 function supportedApi(api: Api): api is GatewayApi { return api === "anthropic-messages" || api === "openai-responses" || api === "openai-completions" || api === "google-generative-ai"; }
 function builtins(backend: GatewayBackend): readonly Model<Api>[] {
 	return backend === "workers-ai" ? getBuiltinModels("cloudflare-ai-gateway").filter((model) => model.id.startsWith("workers-ai/")) : getBuiltinModels(backend);
+}
+/**
+ * Classifier membership. Gateway model lists and OpenCode allowlists describe chat models only, so
+ * Pi's Workers AI classifier catalog supplies candidates. Only Cloudflare-hosted `@cf/` models run on
+ * the gateway's account-bound Workers AI binding; third-party models there bill gateway credits.
+ * The gateway overlay adds models Pi lacks and corrects stale entries.
+ */
+function classifierBuiltins(backend: GatewayBackend): readonly ClassifierModel<GatewayClassifierApi>[] {
+	if (backend !== "workers-ai") return [];
+	const models = new Map<string, ClassifierModel<GatewayClassifierApi>>();
+	for (const model of getBuiltinClassifierModels("cloudflare-workers-ai")) {
+		if (model.api === GATEWAY_WORKERS_AI_CLASSIFIER_API && model.id.startsWith("@cf/")) models.set(model.id, { ...model, api: GATEWAY_WORKERS_AI_CLASSIFIER_API });
+	}
+	for (const [id, overlay] of Object.entries(GATEWAY_WORKERS_AI_CLASSIFIER_OVERLAY)) {
+		const builtin = models.get(id);
+		models.set(id, {
+			type: "classifier", provider: "cloudflare-workers-ai", baseUrl: "", ...builtin,
+			id, name: overlay.name, api: GATEWAY_WORKERS_AI_CLASSIFIER_API, input: ["text"], contextWindow: overlay.contextWindow,
+			cost: { input: overlay.inputCostPerMillion, output: 0, cacheRead: 0, cacheWrite: 0 },
+		});
+	}
+	return [...models.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+function projectClassifier(profile: GatewayProfile, route: GatewayRoute, builtin: ClassifierModel<GatewayClassifierApi>): ClassifierModel<GatewayClassifierApi> {
+	return {
+		...builtin,
+		provider: profile.id,
+		// The provider-native route, not the OpenAI-compatible chat route the chat models use.
+		baseUrl: `${profile.inferenceOrigin}${GATEWAY_WORKERS_AI_RUN_PATH}`,
+		cost: { ...builtin.cost },
+		input: [...builtin.input],
+		headers: { ...route.headers },
+	};
 }
 function routeAllows(route: GatewayRoute, id: string, key: string): boolean {
 	return (route.include === undefined || route.include.includes(id) || route.include.includes(key)) && !route.exclude?.some((value) => value === id || value === key);
@@ -71,9 +107,9 @@ export class NativeGatewayCatalog {
 	constructor(private readonly inventory: HttpGatewayInventory) {}
 	/** Server whitelists restrict membership; model declarations supply overrides and explicit aliases. */
 	async loadCatalog(profile: GatewayProfile, discovery: GatewayDiscovery, token: GatewayAccessToken, signal: AbortSignal): Promise<GatewayResult<GatewayCatalog, GatewayRequestError | GatewayCatalogError>> {
-		const models: Model<GatewayApi>[] = [];
+		const models: GatewayModel[] = [];
 		const warnings: string[] = [...discovery.warnings ?? []];
-		const seen = new Set<string>();
+		const seen = new Set<string>(), seenClassifiers = new Set<string>();
 		const requested = profile.models.include;
 		const prepared = discovery.routes.map((route) => {
 			const catalog = new Map(builtins(route.backend).map((model) => [model.id, model]));
@@ -82,11 +118,12 @@ export class NativeGatewayCatalog {
 			}]));
 			const byRequestId = new Map<string, (typeof declarations extends Map<string, infer Entry> ? Entry : never)[]>();
 			for (const entry of declarations.values()) byRequestId.set(entry.id, [...byRequestId.get(entry.id) ?? [], entry]);
-			return { route, catalog, declarations, byRequestId, knownIds: new Set([...catalog.keys(), ...byRequestId.keys()]) };
+			const classifiers = classifierBuiltins(route.backend);
+			return { route, catalog, classifiers, declarations, byRequestId, knownIds: new Set([...catalog.keys(), ...byRequestId.keys(), ...classifiers.map((model) => model.id)]) };
 		});
 		const allKnownIds = new Set(prepared.flatMap(({ knownIds }) => [...knownIds]));
 		const hasUnknownRequest = requested?.some((id) => !allKnownIds.has(id)) ?? false;
-		for (const { route, catalog, declarations, byRequestId, knownIds } of prepared) {
+		for (const { route, catalog, classifiers, declarations, byRequestId, knownIds } of prepared) {
 			// An explicit allowlist must not depend on unrelated, unauthorized gateway backends.
 			if (requested && !hasUnknownRequest && !requested.some((id) => knownIds.has(id))) continue;
 			if (signal.aborted) return gatewayFailure(new GatewayRequestError("cancelled", "model-list"));
@@ -134,6 +171,13 @@ export class NativeGatewayCatalog {
 				models.push(model);
 			}
 			if (skipped) warnings.push(`${route.backend}: ${skipped} listed IDs lack Pi or gateway token-limit metadata; not exposed for inference`);
+			// Server blacklists still apply; chat allowlists do not describe classifier models.
+			for (const builtin of classifiers) {
+				if (route.exclude?.includes(builtin.id)) continue;
+				if (seenClassifiers.has(builtin.id)) return gatewayFailure(new GatewayCatalogError("duplicate-id", route.backend));
+				seenClassifiers.add(builtin.id);
+				models.push(projectClassifier(profile, route, builtin));
+			}
 		}
 		return gatewaySuccess({ models, warnings });
 	}

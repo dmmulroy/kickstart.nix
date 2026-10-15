@@ -1,6 +1,7 @@
-import { createProvider, lazyStream, type Model, type Provider } from "@earendil-works/pi-ai";
+import { createProvider, lazyStream, type ClassifierResult, type Provider } from "@earendil-works/pi-ai";
 import { createGatewayAccessAuth, gatewayCredentialToken, type GatewayAccessToken } from "./gateway-auth.ts";
 import { GATEWAY_APIS, type GatewayApi } from "./gateway-api.ts";
+import { GATEWAY_CLASSIFIERS } from "./gateway-classifier.ts";
 import type { NativeGatewayCatalog } from "./gateway-catalog.ts";
 import type { HttpGatewayDiscovery } from "./gateway-discovery.ts";
 import { gatewayModelIncluded, type GatewayModelFilter, type GatewayProfile } from "./gateway-profile.ts";
@@ -29,7 +30,7 @@ export function buildGatewayProvider(profile: GatewayProfile, dependencies: {
 		if (!secrets.some((existing) => existing.equals(token))) secrets.push(token);
 		if (secrets.length > 32) secrets.shift();
 	};
-	const trusted = (model: Model<GatewayApi>): boolean => {
+	const trusted = (model: { readonly baseUrl: string }): boolean => {
 		try {
 			const url = new URL(model.baseUrl);
 			return url.origin === profile.inferenceOrigin && !url.username && !url.password;
@@ -39,6 +40,7 @@ export function buildGatewayProvider(profile: GatewayProfile, dependencies: {
 		id: profile.id, name: profile.name, baseUrl: profile.inferenceOrigin, models: [],
 		auth: createGatewayAccessAuth(profile, { now: dependencies.now, remember }),
 		api: GATEWAY_APIS,
+		classifiers: GATEWAY_CLASSIFIERS,
 		async fetchModels(context) {
 			const token = gatewayCredentialToken(context.credential, dependencies.now());
 			if (!token.ok) throw token.error;
@@ -51,9 +53,20 @@ export function buildGatewayProvider(profile: GatewayProfile, dependencies: {
 			return catalog.value.models;
 		},
 	});
+	const visible = (model: { readonly id: string; readonly baseUrl: string }) => trusted(model) && gatewayModelIncluded(model.id, filter);
+	const allModels = () => native.getAllModels?.() ?? native.getModels();
+	const nativeClassify = native.classify?.bind(native);
 	const provider: Provider<GatewayApi> = {
 		...native,
-		getModels: () => native.getModels().filter((model) => trusted(model) && gatewayModelIncluded(model.id, filter)),
+		getModels: () => native.getModels().filter(visible),
+		getAllModels: () => allModels().filter(visible),
+		async classify(model, context, options): Promise<ClassifierResult> {
+			if (trusted(model) && nativeClassify) return nativeClassify(model, context, options);
+			return {
+				api: model.api, provider: model.provider, model: model.id, answers: {}, stopReason: "error", timestamp: Date.now(),
+				errorMessage: "Private gateway classification rejected: untrusted model origin",
+			};
+		},
 		stream: (model, context, options) => trusted(model) ? native.stream(model, context, options) : lazyStream(model, async () => { throw new Error("Private gateway inference rejected: untrusted model origin"); }),
 		streamSimple: (model, context, options) => trusted(model) ? native.streamSimple(model, context, options) : lazyStream(model, async () => { throw new Error("Private gateway inference rejected: untrusted model origin"); }),
 	};
@@ -61,7 +74,7 @@ export function buildGatewayProvider(profile: GatewayProfile, dependencies: {
 		provider,
 		setModelFilter(next) { filter = next; },
 		getWarnings() {
-			const ids = new Set(native.getModels().values().filter(trusted).map((model) => model.id));
+			const ids = new Set(allModels().values().filter(trusted).map((model) => model.id));
 			const unmatched = filter.include?.filter((id) => !ids.has(id)).length ?? 0;
 			return unmatched ? [...warnings, `${unmatched} included IDs are unavailable in the inference catalog`] : warnings;
 		},
